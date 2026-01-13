@@ -1,0 +1,196 @@
+{
+    "widgets": [
+        {
+            "type": "log",
+            "x": 0,
+            "y": 0,
+            "width": 8,
+            "height": 10,
+            "properties": {
+                "query": "SOURCE \"/smart-orders/processor\" |\nstats count() as count by event",
+                "queryBy": "logGroupName",
+                "logGroupPrefixes": {
+                    "logClass": "STANDARD",
+                    "logGroupPrefix": [],
+                    "accountIds": []
+                },
+                "region": "ap-south-1",
+                "stacked": false,
+                "view": "pie",
+                "title": "Event Distribution (Health Overview)"
+            }
+        },
+        {
+            "type": "log",
+            "x": 8,
+            "y": 0,
+            "width": 16,
+            "height": 5,
+            "properties": {
+                "query": "SOURCE \"/smart-orders/processor\" |\nstats count() as orders by bin(1m)",
+                "queryBy": "logGroupName",
+                "logGroupPrefixes": {
+                    "logClass": "STANDARD",
+                    "logGroupPrefix": [],
+                    "accountIds": []
+                },
+                "region": "ap-south-1",
+                "stacked": false,
+                "view": "timeSeries",
+                "title": "Orders Per Minute (Traffic Volume)"
+            }
+        },
+        {
+            "type": "log",
+            "x": 8,
+            "y": 5,
+            "width": 16,
+            "height": 5,
+            "properties": {
+                "query": "SOURCE \"/smart-orders/processor\" |\nfilter event = \"PAYMENT_FAILED\"\n| stats count() as failures by bin(1m)",
+                "queryBy": "logGroupName",
+                "logGroupPrefixes": {
+                    "logClass": "STANDARD",
+                    "logGroupPrefix": [],
+                    "accountIds": []
+                },
+                "region": "ap-south-1",
+                "stacked": false,
+                "view": "timeSeries",
+                "title": "Payment Failures Over Time"
+            }
+        },
+        {
+            "type": "log",
+            "x": 12,
+            "y": 10,
+            "width": 12,
+            "height": 9,
+            "properties": {
+                "query": "SOURCE \"/smart-orders/processor\" |\nfilter event = \"PAYMENT_FAILED\"\n| stats count() as failures by customerId\n| sort failures desc\n| limit 10",
+                "queryBy": "logGroupName",
+                "logGroupPrefixes": {
+                    "logClass": "STANDARD",
+                    "logGroupPrefix": [],
+                    "accountIds": []
+                },
+                "region": "ap-south-1",
+                "stacked": false,
+                "view": "bar",
+                "title": "Top Failing Customers"
+            }
+        },
+        {
+            "type": "log",
+            "x": 0,
+            "y": 19,
+            "width": 12,
+            "height": 5,
+            "properties": {
+                "query": "SOURCE \"/smart-orders/processor\" |\nfilter event = \"PROCESSING_DELAY\"\n| stats avg(processingTimeMs) as avg_delay by bin(1m)",
+                "queryBy": "logGroupName",
+                "logGroupPrefixes": {
+                    "logClass": "STANDARD",
+                    "logGroupPrefix": [],
+                    "accountIds": []
+                },
+                "region": "ap-south-1",
+                "stacked": false,
+                "view": "timeSeries",
+                "title": "Processing Delays Over Time"
+            }
+        },
+        {
+            "type": "log",
+            "x": 3,
+            "y": 10,
+            "width": 9,
+            "height": 9,
+            "properties": {
+                "query": "SOURCE \"/smart-orders/processor\" |\nfields @timestamp, customerId, processingTimeMs\n| filter processingTimeMs > 3000\n| sort processingTimeMs desc\n| limit 15",
+                "queryBy": "logGroupName",
+                "logGroupPrefixes": {
+                    "accountIds": [],
+                    "logGroupPrefix": [],
+                    "logClass": "STANDARD"
+                },
+                "region": "ap-south-1",
+                "stacked": false,
+                "title": "Worst Delays (Top Slow Orders)",
+                "view": "table"
+            }
+        },
+        {
+            "type": "log",
+            "x": 0,
+            "y": 24,
+            "width": 12,
+            "height": 5,
+            "properties": {
+                "query": "SOURCE \"/smart-orders/processor\" |\nfilter event = \"PAYMENT_FAILED\"\n| stats count() as failures by bin(1m)\n| filter failures >= 5",
+                "queryBy": "logGroupName",
+                "logGroupPrefixes": {
+                    "logClass": "STANDARD",
+                    "logGroupPrefix": [],
+                    "accountIds": []
+                },
+                "region": "ap-south-1",
+                "stacked": false,
+                "view": "timeSeries",
+                "title": "Alarm Correlation (Manual Detection)"
+            }
+        },
+        {
+            "type": "log",
+            "x": 12,
+            "y": 19,
+            "width": 12,
+            "height": 10,
+            "properties": {
+                "query": "SOURCE \"/smart-orders/processor\" |\nfields @timestamp, event, customerId, amount, processingTimeMs\n| sort @timestamp desc\n| limit 20",
+                "queryBy": "logGroupName",
+                "logGroupPrefixes": {
+                    "logClass": "STANDARD",
+                    "logGroupPrefix": [],
+                    "accountIds": []
+                },
+                "region": "ap-south-1",
+                "stacked": false,
+                "view": "table",
+                "title": "Event Timeline (Forensics)"
+            }
+        },
+        {
+            "type": "metric",
+            "x": 0,
+            "y": 29,
+            "width": 24,
+            "height": 5,
+            "properties": {
+                "metrics": [
+                    [ { "expression": "SUM(METRICS())", "label": "Expression1", "id": "e1" } ],
+                    [ "SmartOrders", "PaymentFailures", { "id": "m1", "period": 60 } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "ap-south-1",
+                "stat": "Average",
+                "period": 300,
+                "title": "Payment Failures (Metric-based)"
+            }
+        },
+        {
+            "type": "alarm",
+            "x": 0,
+            "y": 10,
+            "width": 3,
+            "height": 9,
+            "properties": {
+                "title": "Alarm",
+                "alarms": [
+                    "arn:aws:cloudwatch:ap-south-1:202533520289:alarm:HighPaymentFailureRate"
+                ]
+            }
+        }
+    ]
+}

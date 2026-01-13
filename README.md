@@ -1,6 +1,3 @@
-
----
-
 # 📊 Smart Order Log Processor – AWS Observability Project
 
 ## 📌 Project Overview
@@ -96,6 +93,10 @@ smart-order-log-processor/
 ├── package.json
 ├── package-lock.json
 ├── node_modules/
+├── screenshots/
+│   ├── 1.png
+│   ├── 2.png
+│   └── 3.png
 └── README.md
 ```
 
@@ -235,113 +236,231 @@ Structured logs enable:
 
 ---
 
+## 🟦 PHASE 5A — Deep Dive: CloudWatch Logs Insights (Querying, Patterns & Visualization)
+
+This phase focuses on **interactive log analysis** using **CloudWatch Logs Insights**, treating logs as the primary source of truth for system behavior.
+
+---
+
+### 🟦 Accessing Logs Insights
+
+**AWS Console Path:**
+
+```
+CloudWatch → Logs → Logs Insights
+```
+
+**Configuration:**
+
+* Log group: `/smart-orders/processor`
+* Time range: Last 15 minutes (adjustable)
+
+---
+
+### 🟦 Basic Log Exploration (Sanity Check)
+
+```sql
+fields @timestamp, event, customerId, amount, processingTimeMs
+| sort @timestamp desc
+| limit 20
+```
+
+**Outcome:**
+
+* Confirmed real-time log ingestion
+* Verified JSON structure
+* Used for quick debugging
+
+---
+
+### 🟦 Filtering Specific Events (Payment Failures)
+
+```sql
+fields @timestamp, customerId, amount
+| filter event = "PAYMENT_FAILED"
+| sort @timestamp desc
+```
+
+**Use case:**
+
+* Investigate recent failures
+* Correlate with alarms and incidents
+
+---
+
+### 🟦 Event Distribution Analysis
+
+```sql
+stats count() by event
+```
+
+**Visualization:** Pie / Donut chart
+**Insights gained:** Success vs failure ratios and system health snapshot
+
+---
+
+### 🟦 Failure Trends Over Time
+
+```sql
+filter event = "PAYMENT_FAILED"
+| stats count() as failures by bin(1m)
+```
+
+**Visualization:** Line chart
+**Why:** Spike detection and incident correlation
+
+---
+
+### 🟦 Order Volume Over Time
+
+```sql
+stats count() as orders by bin(1m)
+```
+
+**Visualization:** Line chart
+**Insight:** Traffic bursts vs failures
+
+---
+
+### 🟦 Identifying Noisy Customers
+
+```sql
+filter event = "PAYMENT_FAILED"
+| stats count() as failures by customerId
+| sort failures desc
+| limit 10
+```
+
+**Visualization:** Bar chart
+**Why:** Root cause analysis and abuse detection
+
+---
+
+### 🟦 Performance Analysis (Latency)
+
+```sql
+filter processingTimeMs > 2000
+| stats avg(processingTimeMs) as avg_delay by bin(1m)
+```
+
+**Outcome:** Detected latency spikes preceding failures
+
+---
+
+### 🟦 Worst-Case Performance
+
+```sql
+fields @timestamp, customerId, processingTimeMs
+| filter processingTimeMs > 3000
+| sort processingTimeMs desc
+| limit 10
+```
+
+**Use case:** Incident forensics
+
+---
+
+### 🟦 Failure Threshold Validation
+
+```sql
+filter event = "PAYMENT_FAILED"
+| stats count() as failures by bin(1m)
+| filter failures >= 5
+```
+
+**Outcome:** Verified alarm accuracy
+
+---
+
+### 🟦 Failure Rate Analysis
+
+```sql
+stats 
+  count(*) as total,
+  sum(if(event = "PAYMENT_FAILED", 1, 0)) as failed
+by bin(1m)
+| fields bin(1m), (failed * 100.0) / total as failure_rate
+```
+
+**Visualization:** Line chart
+**Why:** SLO-style monitoring
+
+---
+
+### 🟦 Dashboard Integration
+
+Logs Insights queries were added as **dashboard widgets**, creating a **unified observability dashboard** combining logs, metrics, alarms, and SLO indicators.
+
+---
+
+## 📸 CloudWatch Observability Dashboard (Screenshots)
+
+The following screenshots show the **single unified CloudWatch dashboard** built from Logs Insights queries, metrics, and alarms.
+
+### Dashboard Overview – System Health & Traffic
+
+![Dashboard Screenshot 1](screenshots/1.png)
+
+### Incident Detection & Customer Impact
+
+![Dashboard Screenshot 2](screenshots/2.png)
+
+### Performance, Correlation & Forensics
+
+![Dashboard Screenshot 3](screenshots/3.png)
+
+These dashboards enable:
+
+* Real-time system visibility
+* Fast incident triage
+* Historical trend analysis
+* SLO-style monitoring from logs alone
+
+---
+
 ## 🟦 PHASE 6 — Contributor Insights
 
-### What was done
-
-* Created Contributor Insights rule
 * Grouped failures by `customerId`
-* Identified top contributors to failures
-
-### Why
-
-* Find noisy customers
-* Identify systemic issues
-* Reduce MTTR in production
+* Identified top contributors to errors
+* Reduced MTTR during incidents
 
 ---
 
 ## 🟦 PHASE 7 — Log Anomaly Detection
 
-### What was done
-
-* Enabled anomaly detection on log group
-* Filtered on `PAYMENT_FAILED`
-* Allowed CloudWatch to learn baseline behavior
-* Detected abnormal spikes
-
-### Why
-
-* No static thresholds
-* Adaptive, ML-based monitoring
-* Production-grade observability
+* Enabled ML-based anomaly detection
+* Learned baseline behavior
+* Detected abnormal failure spikes automatically
 
 ---
 
 ## 🟦 PHASE 8 — Log Metric Filters & Alarms
 
-### What was done
-
-* Created log metric filter:
-
-  * PAYMENT_FAILED → metric
-* Created custom metric:
-
-  ```
-  SmartOrders / PaymentFailures
-  ```
-* Built CloudWatch alarm:
-
-  * Trigger if ≥ 5 failures in 1 minute
-* Integrated SNS email notifications
-
-### Result
-
-* Alarm triggered successfully
-* Email notification received
-
-### Why
-
-* Automated alerting
-* Logs → Metrics → Alerts pipeline
+* Created metric from logs:
+  `SmartOrders / PaymentFailures`
+* Alarm triggers if ≥ 5 failures / minute
+* SNS email notification verified
 
 ---
 
 ## 🟦 PHASE 9 — Log Management & Cost Control
 
-### What was done
-
-* Set log retention to **7 days**
-
-### Why
-
-* Prevent uncontrolled log growth
-* Control CloudWatch costs
-* Follow governance best practices
+* Log retention set to **7 days**
+* Prevented uncontrolled cost growth
 
 ---
 
 ## 🟦 PHASE 10 — Finalization & Documentation
 
-### What was done
-
-* Final architecture review
-* Resume-ready explanations
-* Interview-ready project story
-* Complete documentation
-
----
-
-## 📌 Key AWS Concepts Demonstrated
-
-* CloudWatch Logs Management
-* Live Tail
-* Logs Insights
-* Contributor Insights
-* Log Anomaly Detection
-* Log Metric Filters
-* Custom Metrics
-* CloudWatch Alarms
-* SNS Notifications
-* IAM roles & policies
-* EC2 with SSM
-* Shell scripting
+* Resume-ready documentation
+* Interview-ready narrative
+* Production-grade observability story
 
 ---
 
 ## 🎯 Resume-Ready Summary
 
-> Built a production-grade AWS observability pipeline using CloudWatch Logs, Insights, Contributor Insights, anomaly detection, metric filters, and alarms to monitor a log-driven order processing system with real-time alerting via SNS.
+> Built a production-grade AWS observability pipeline using CloudWatch Logs, Logs Insights, Contributor Insights, anomaly detection, metric filters, and alarms to monitor a log-driven order processing system with real-time SNS alerts.
 
 ---
 
@@ -357,7 +476,7 @@ chmod +x run-worker.sh
 
 ## 🧠 Key Learning Outcome
 
-This project demonstrates how **logs can drive monitoring**, how **metrics can be derived from logs**, and how **alerts can be automated** — exactly how real DevOps and SRE teams operate.
+Logs can **drive monitoring**, **generate metrics**, and **power alerts** — exactly how real DevOps and SRE teams operate.
 
 ---
 
@@ -367,6 +486,3 @@ This project demonstrates how **logs can drive monitoring**, how **metrics can b
 ✅ All CloudWatch features exercised
 ✅ Alerts verified
 ✅ Production-ready observability setup
-
----
-
